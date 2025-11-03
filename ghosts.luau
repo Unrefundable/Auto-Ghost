@@ -7,7 +7,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 -- Toggle state
 local autoResetEnabled = false
-local targetUsername = "" -- Username to search for
+local targetPlayers = {} -- Dictionary of usernames to track
 local RESET_DURATION = 600 -- 10 minutes in seconds
 local SEARCH_RADIUS = 20 -- 20 studs
 
@@ -17,14 +17,13 @@ screenGui.Name = "GhostResetGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Create main frame (larger to fit username input)
+-- Create main frame (larger to fit player list)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 250, 0, 160)
-mainFrame.Position = UDim2.new(0.5, -125, 0.1, 0)
+mainFrame.Size = UDim2.new(0, 280, 0, 350)
+mainFrame.Position = UDim2.new(0.5, -140, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
 -- Add UI Corner for rounded edges
@@ -57,34 +56,141 @@ usernameLabel.Font = Enum.Font.Gotham
 usernameLabel.TextXAlignment = Enum.TextXAlignment.Left
 usernameLabel.Parent = mainFrame
 
--- Create username input box
-local usernameInput = Instance.new("TextBox")
-usernameInput.Name = "UsernameInput"
-usernameInput.Size = UDim2.new(1, -20, 0, 30)
-usernameInput.Position = UDim2.new(0, 10, 0, 65)
-usernameInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-usernameInput.BorderSizePixel = 0
-usernameInput.Text = ""
-usernameInput.PlaceholderText = "Enter username..."
-usernameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-usernameInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-usernameInput.TextSize = 14
-usernameInput.Font = Enum.Font.Gotham
-usernameInput.Parent = mainFrame
+-- Create player input box
+local playerInput = Instance.new("TextBox")
+playerInput.Name = "PlayerInput"
+playerInput.Size = UDim2.new(1, -90, 0, 30)
+playerInput.Position = UDim2.new(0, 10, 0, 65)
+playerInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+playerInput.BorderSizePixel = 0
+playerInput.Text = ""
+playerInput.PlaceholderText = "Enter username..."
+playerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+playerInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+playerInput.TextSize = 12
+playerInput.Font = Enum.Font.Gotham
+playerInput.Parent = mainFrame
 
 local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 6)
-inputCorner.Parent = usernameInput
+inputCorner.Parent = playerInput
+
+-- Add button
+local addButton = Instance.new("TextButton")
+addButton.Name = "AddButton"
+addButton.Size = UDim2.new(0, 65, 0, 30)
+addButton.Position = UDim2.new(1, -75, 0, 65)
+addButton.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+addButton.Text = "Add"
+addButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+addButton.TextSize = 12
+addButton.Font = Enum.Font.GothamBold
+addButton.Parent = mainFrame
+
+local addCorner = Instance.new("UICorner")
+addCorner.CornerRadius = UDim.new(0, 6)
+addCorner.Parent = addButton
+
+-- Player list frame
+local listFrame = Instance.new("ScrollingFrame")
+listFrame.Name = "ListFrame"
+listFrame.Size = UDim2.new(1, -20, 0, 180)
+listFrame.Position = UDim2.new(0, 10, 0, 105)
+listFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+listFrame.BorderSizePixel = 0
+listFrame.ScrollBarThickness = 6
+listFrame.Parent = mainFrame
+
+local listCorner = Instance.new("UICorner")
+listCorner.CornerRadius = UDim.new(0, 6)
+listCorner.Parent = listFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 5)
+listLayout.Parent = listFrame
+
+-- Function to update player list display
+local function updatePlayerList()
+	-- Clear existing entries
+	for _, child in ipairs(listFrame:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	
+	-- Add entries for each player
+	for username, _ in pairs(targetPlayers) do
+		local entry = Instance.new("Frame")
+		entry.Name = username
+		entry.Size = UDim2.new(1, -10, 0, 25)
+		entry.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		entry.BorderSizePixel = 0
+		entry.Parent = listFrame
+		
+		local entryCorner = Instance.new("UICorner")
+		entryCorner.CornerRadius = UDim.new(0, 4)
+		entryCorner.Parent = entry
+		
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(1, -35, 1, 0)
+		nameLabel.Position = UDim2.new(0, 5, 0, 0)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Text = username
+		nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		nameLabel.TextSize = 11
+		nameLabel.Font = Enum.Font.Gotham
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.Parent = entry
+		
+		local removeBtn = Instance.new("TextButton")
+		removeBtn.Size = UDim2.new(0, 25, 0, 20)
+		removeBtn.Position = UDim2.new(1, -28, 0.5, -10)
+		removeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+		removeBtn.Text = "X"
+		removeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		removeBtn.TextSize = 12
+		removeBtn.Font = Enum.Font.GothamBold
+		removeBtn.Parent = entry
+		
+		local removeCorner = Instance.new("UICorner")
+		removeCorner.CornerRadius = UDim.new(0, 4)
+		removeCorner.Parent = removeBtn
+		
+		removeBtn.MouseButton1Click:Connect(function()
+			targetPlayers[username] = nil
+			updatePlayerList()
+			print("Removed player from targets:", username)
+		end)
+	end
+	
+	-- Update canvas size
+	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		listFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+	end)
+	listFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- Add button functionality
+addButton.MouseButton1Click:Connect(function()
+	local username = playerInput.Text:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
+	if username ~= "" and not targetPlayers[username] then
+		targetPlayers[username] = true
+		playerInput.Text = ""
+		updatePlayerList()
+		print("Added player to targets:", username)
+	end
+end)
 
 -- Create toggle button
 local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(1, -20, 0, 40)
-toggleButton.Position = UDim2.new(0, 10, 0, 110)
+toggleButton.Size = UDim2.new(1, -20, 0, 35)
+toggleButton.Position = UDim2.new(0, 10, 0, 295)
 toggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 toggleButton.Text = "OFF"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.TextSize = 18
+toggleButton.TextSize = 14
 toggleButton.Font = Enum.Font.GothamBold
 toggleButton.Parent = mainFrame
 
@@ -101,35 +207,28 @@ local function getPlayerPosition()
 	return nil
 end
 
--- Helper: Get target player position
-local function getTargetPlayerPosition()
-	if targetUsername == "" then
-		return nil
-	end
-	
-	local targetPlayer = Players:FindFirstChild(targetUsername)
-	if not targetPlayer then
-		return nil
-	end
-	
-	if targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-		return targetPlayer.Character.HumanoidRootPart.Position
-	end
-	
-	return nil
-end
-
--- Helper: Check if target player is in radius
-local function isTargetInRadius()
+-- Helper: Check if any target player is in radius
+local function isAnyTargetInRadius()
 	local myPos = getPlayerPosition()
-	local targetPos = getTargetPlayerPosition()
-	
-	if not myPos or not targetPos then
-		return false
+	if not myPos then
+		return false, nil
 	end
 	
-	local distance = (targetPos - myPos).Magnitude
-	return distance <= SEARCH_RADIUS
+	-- Check all target players
+	for username, _ in pairs(targetPlayers) do
+		local targetPlayer = Players:FindFirstChild(username)
+		if targetPlayer and targetPlayer.Character then
+			local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if targetHRP then
+				local distance = (targetHRP.Position - myPos).Magnitude
+				if distance <= SEARCH_RADIUS then
+					return true, username
+				end
+			end
+		end
+	end
+	
+	return false, nil
 end
 
 -- Helper: Check if player is dead
@@ -190,16 +289,17 @@ local function updateButton()
 	end
 end
 
--- Update username input handler
-usernameInput.FocusLost:Connect(function(enterPressed)
-	targetUsername = usernameInput.Text
-	print("Target username set to:", targetUsername)
-end)
-
 -- Toggle button click handler
 toggleButton.MouseButton1Click:Connect(function()
-	if usernameInput.Text == "" then
-		warn("Please enter a target username first!")
+	-- Check if there are any target players
+	local hasTargets = false
+	for _ in pairs(targetPlayers) do
+		hasTargets = true
+		break
+	end
+	
+	if not hasTargets then
+		warn("Please add at least one target player first!")
 		return
 	end
 	
@@ -214,37 +314,52 @@ task.spawn(function()
 		if autoResetEnabled then
 			print("\n=== Starting Ghost Tracker ===")
 			
-			-- Phase 1: Try to spawn near target player
-			local foundTarget = false
-			while not foundTarget and autoResetEnabled do
-				-- Activate spawn button
-				print("Activating spawn button...")
-				if activateSpawnButton() then
-					task.wait(2)
-					
-					-- Check if target player is in radius
-					if isTargetInRadius() then
-						print("✓ Target player found in radius!")
-						foundTarget = true
+			-- Check if we still have target players
+			local hasTargets = false
+			for _ in pairs(targetPlayers) do
+				hasTargets = true
+				break
+			end
+			
+			if not hasTargets then
+				print("No target players - disabling tracker")
+				autoResetEnabled = false
+				updateButton()
+				task.wait(1)
+			else
+				-- Phase 1: Try to spawn near any target player
+				local foundTarget = false
+				while not foundTarget and autoResetEnabled do
+					-- Activate spawn button
+					print("Activating spawn button...")
+					if activateSpawnButton() then
+						task.wait(2)
 						
-						-- Phase 2: Wait until killed
-						print("Waiting for death...")
-						while not isDead() and autoResetEnabled do
-							task.wait(1)
+						-- Check if any target player is in radius
+						local inRange, foundUsername = isAnyTargetInRadius()
+						if inRange then
+							print("✓ Target player found in radius:", foundUsername)
+							foundTarget = true
+							
+							-- Phase 2: Wait until killed
+							print("Waiting for death...")
+							while not isDead() and autoResetEnabled do
+								task.wait(1)
+							end
+							
+							print("Player died - waiting 3 seconds before respawn")
+							task.wait(3)
+							-- Loop will restart and activate spawn button again
+						else
+							print("✗ No target players in radius - resetting...")
+							resetCharacter()
+							task.wait(3)
+							-- Loop continues to try spawn again
 						end
-						
-						print("Player died - waiting 3 seconds before respawn")
-						task.wait(3)
-						-- Loop will restart and activate spawn button again
 					else
-						print("✗ Target player not in radius - resetting...")
-						resetCharacter()
-						task.wait(3)
-						-- Loop continues to try spawn again
+						warn("Failed to activate spawn button - waiting before retry")
+						task.wait(5)
 					end
-				else
-					warn("Failed to activate spawn button - waiting before retry")
-					task.wait(5)
 				end
 			end
 		else
