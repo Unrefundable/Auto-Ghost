@@ -20,7 +20,7 @@ screenGui.Parent = playerGui
 -- Create main frame (dynamically sized)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 280, 0, 180) -- Start small (no list visible)
+mainFrame.Size = UDim2.new(0, 280, 0, 160) -- Start small (no list visible)
 mainFrame.Position = UDim2.new(0.5, -140, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
@@ -110,6 +110,23 @@ local listLayout = Instance.new("UIListLayout")
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 5)
 listLayout.Parent = listFrame
+
+-- Create toggle button (positioned dynamically) - MUST BE CREATED BEFORE updatePlayerList
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(1, -20, 0, 35)
+toggleButton.Position = UDim2.new(0, 10, 0, 115) -- Initial position when no list
+toggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+toggleButton.Text = "OFF"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 14
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Parent = mainFrame
+
+-- Add UI Corner to button
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 6)
+buttonCorner.Parent = toggleButton
 
 -- Function to update player list display and resize GUI
 local function updatePlayerList()
@@ -210,23 +227,6 @@ addButton.MouseButton1Click:Connect(function()
 		print("Added player to targets:", username)
 	end
 end)
-
--- Create toggle button (positioned dynamically)
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(1, -20, 0, 35)
-toggleButton.Position = UDim2.new(0, 10, 0, 115) -- Initial position when no list
-toggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-toggleButton.Text = "OFF"
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.TextSize = 14
-toggleButton.Font = Enum.Font.GothamBold
-toggleButton.Parent = mainFrame
-
--- Add UI Corner to button
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 6)
-buttonCorner.Parent = toggleButton
 
 -- Helper: Get player position
 local function getPlayerPosition()
