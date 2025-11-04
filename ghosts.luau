@@ -17,10 +17,10 @@ screenGui.Name = "GhostResetGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Create main frame (larger to fit player list)
+-- Create main frame (dynamically sized)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 280, 0, 350)
+mainFrame.Size = UDim2.new(0, 280, 0, 180) -- Start small (no list visible)
 mainFrame.Position = UDim2.new(0.5, -140, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 mainFrame.BorderSizePixel = 0
@@ -91,14 +91,15 @@ local addCorner = Instance.new("UICorner")
 addCorner.CornerRadius = UDim.new(0, 6)
 addCorner.Parent = addButton
 
--- Player list frame
+-- Player list frame (initially hidden)
 local listFrame = Instance.new("ScrollingFrame")
 listFrame.Name = "ListFrame"
-listFrame.Size = UDim2.new(1, -20, 0, 180)
+listFrame.Size = UDim2.new(1, -20, 0, 0) -- Start at 0 height
 listFrame.Position = UDim2.new(0, 10, 0, 105)
 listFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 listFrame.BorderSizePixel = 0
 listFrame.ScrollBarThickness = 6
+listFrame.Visible = false -- Hidden when empty
 listFrame.Parent = mainFrame
 
 local listCorner = Instance.new("UICorner")
@@ -110,13 +111,41 @@ listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 5)
 listLayout.Parent = listFrame
 
--- Function to update player list display
+-- Function to update player list display and resize GUI
 local function updatePlayerList()
 	-- Clear existing entries
 	for _, child in ipairs(listFrame:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
+	end
+	
+	-- Count players
+	local playerCount = 0
+	for _ in pairs(targetPlayers) do
+		playerCount = playerCount + 1
+	end
+	
+	-- Update visibility and size based on player count
+	if playerCount == 0 then
+		-- No players - hide list and shrink GUI
+		listFrame.Visible = false
+		listFrame.Size = UDim2.new(1, -20, 0, 0)
+		toggleButton.Position = UDim2.new(0, 10, 0, 115)
+		mainFrame.Size = UDim2.new(0, 280, 0, 160)
+	else
+		-- Show list and expand GUI
+		listFrame.Visible = true
+		
+		-- Calculate list height (30 per entry, max 180)
+		local listHeight = math.min(playerCount * 30, 180)
+		listFrame.Size = UDim2.new(1, -20, 0, listHeight)
+		
+		-- Position toggle button below list
+		toggleButton.Position = UDim2.new(0, 10, 0, 115 + listHeight)
+		
+		-- Resize main frame
+		mainFrame.Size = UDim2.new(0, 280, 0, 160 + listHeight)
 	end
 	
 	-- Add entries for each player
@@ -182,11 +211,11 @@ addButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Create toggle button
+-- Create toggle button (positioned dynamically)
 local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "ToggleButton"
 toggleButton.Size = UDim2.new(1, -20, 0, 35)
-toggleButton.Position = UDim2.new(0, 10, 0, 295)
+toggleButton.Position = UDim2.new(0, 10, 0, 115) -- Initial position when no list
 toggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 toggleButton.Text = "OFF"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
